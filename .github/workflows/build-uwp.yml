@@ -4,7 +4,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-2019 # Uses a cloud VM with older Visual Studio tools needed for Windows 10 Mobile
+    runs-on: windows-2022 # Uses a cloud VM with older Visual Studio tools needed for Windows 10 Mobile
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
