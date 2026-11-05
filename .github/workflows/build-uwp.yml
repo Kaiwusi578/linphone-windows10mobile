@@ -1,0 +1,37 @@
+name: Build Linphone Windows Mobile
+on:
+  workflow_dispatch: # Allows you to manually click "Run" from your browser
+
+jobs:
+  build:
+    runs-on: windows-2019 # Uses a cloud VM with older Visual Studio tools needed for Windows 10 Mobile
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive # Downloads nested Linphone engine dependencies
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Install CMake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.22.x'
+
+      - name: Prepare Build Environment
+        run: |
+          python prepare.py -DENABLE_UWP=ON
+
+      - name: Compile UWP App
+        run: |
+          cd build
+          cmake --build . --config Release
+
+      - name: Upload Finished App
+        uses: actions/upload-artifact@v4
+        with:
+          name: Linphone-WindowsMobile-Package
+          path: build/**/*.appx* # Grabs the compiled app files for deployment
