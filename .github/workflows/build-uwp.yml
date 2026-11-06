@@ -1,50 +1,50 @@
-name: Build Linphone Windows Mobile
+name: Build Linphone Windows Mobile Final
 on:
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: windows-2022
+    runs-on: windows-latest
     steps:
       - name: Checkout Code Base Only
         uses: actions/checkout@v4
         with:
-          submodules: false # Force GitHub to skip downloading submodules automatically
+          submodules: false
 
       - name: Redirect Broken Server Links & Fetch Dependencies
         run: |
-          # Redirect Linphone links to modern GitHub mirrors
           git config --global url."https://github.com".insteadOf "git://git.linphone.org/"
           git config --global url."https://github.com".insteadOf "https://linphone.org"
-          
-          # Redirect the broken Gnome server link to GitHub's official Libxml2 mirror
           git config --global url."https://github.com".insteadOf "git://git.gnome.org/"
-
-          # Manually tell git to safely link and clone submodules with our redirection rules active
           git submodule sync --recursive
           git submodule update --init --recursive --force
 
-      - name: Setup Python
+      - name: Setup Legacy Python 2.7
         uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
+          python-version: '2.7' # Downgrades to Python 2 which the script requires
 
-      - name: Install CMake
+      - name: Install Compatible CMake
         uses: jwlawson/actions-setup-cmake@v2
         with:
-          cmake-version: '3.22.x'
+          cmake-version: '3.15.x' # Older CMake to properly parse legacy configurations
 
-      - name: Prepare Build Environment
+      - name: Setup MSBuild Path
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Run Legacy Linphone Preparation Script
         run: |
-          python prepare.py -DENABLE_UWP=ON
+          python prepare.py -DENABLE_UWP=ON -DENABLE_DEBUG_LOGS=OFF
 
-      - name: Compile UWP App
+      - name: Compile Solution File via MSBuild
         run: |
           cd build
-          cmake --build . --config Release
+          msbuild linphone.sln /p:Configuration=Release /p:Platform="ARM" /p:AppxBundle=Always
 
-      - name: Upload Finished App
+      - name: Upload Finished App Package
         uses: actions/upload-artifact@v4
         with:
           name: Linphone-WindowsMobile-Package
-          path: build/**/*.appx*
+          path: |
+            build/**/*.appx
+            build/**/*.appxbundle
