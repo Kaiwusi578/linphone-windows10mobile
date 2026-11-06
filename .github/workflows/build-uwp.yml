@@ -1,15 +1,28 @@
 name: Build Linphone Windows Mobile
 on:
-  workflow_dispatch: # Allows you to manually click "Run" from your browser
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: windows-2022 # Uses a cloud VM with older Visual Studio tools needed for Windows 10 Mobile
+    runs-on: windows-2022
     steps:
-      - name: Checkout Code
+      - name: Checkout Code Base Only
         uses: actions/checkout@v4
         with:
-          submodules: recursive # Downloads nested Linphone engine dependencies
+          submodules: false # Force GitHub to skip downloading submodules automatically
+
+      - name: Redirect Broken Server Links & Fetch Dependencies
+        run: |
+          # Redirect Linphone links to modern GitHub mirrors
+          git config --global url."https://github.com".insteadOf "git://git.linphone.org/"
+          git config --global url."https://github.com".insteadOf "https://linphone.org"
+          
+          # Redirect the broken Gnome server link to GitHub's official Libxml2 mirror
+          git config --global url."https://github.com".insteadOf "git://git.gnome.org/"
+
+          # Manually tell git to safely link and clone submodules with our redirection rules active
+          git submodule sync --recursive
+          git submodule update --init --recursive --force
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -34,4 +47,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Linphone-WindowsMobile-Package
-          path: build/**/*.appx* # Grabs the compiled app files for deployment
+          path: build/**/*.appx*
